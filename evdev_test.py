@@ -1,3 +1,5 @@
+import evedev
+import time
 from evdev import ecodes, InputDevice, ff
 
 # Find first EV_FF capable event device (that we have permissions
@@ -19,6 +21,8 @@ effect = ff.Effect(
 )
 
 repeat_count = 1
+print(dev)
 effect_id = dev.upload_effect(effect)
 dev.write(ecodes.EV_FF, effect_id, repeat_count)
+time.sleep(5)
 dev.erase_effect(effect_id)
