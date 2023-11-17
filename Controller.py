@@ -1,7 +1,7 @@
 from inputs import get_gamepad
+import evdev
 import math
 import threading
-
 import time;
 
 # https://stackoverflow.com/questions/46506850/how-can-i-get-input-from-an-xbox-one-controller-in-python
@@ -9,12 +9,13 @@ import time;
 class XboxController(object):
     MAX_TRIG_VAL = math.pow(2, 8)
     MAX_JOY_VAL = math.pow(2, 15)
-
+    
     def __init__(self):
-        self.LeftJoystickY = 0
-        self.LeftJoystickX = 0
-        self.RightJoystickY = 0
-        self.RightJoystickX = 0
+        self.gamepad = None
+        self.LeftJoystickY = 1
+        self.LeftJoystickX = 1
+        self.RightJoystickY = 1
+        self.RightJoystickX = 1
         self.LeftTrigger = 0
         self.RightTrigger = 0
         self.LeftBumper = 0
@@ -33,89 +34,69 @@ class XboxController(object):
         self.DownDPad = 0
 
     def connect(self):
+        self.gamepad = evdev.InputDevice(evdev.list_devices()[0])
         self._monitor_thread = threading.Thread(target=self._monitor_controller, args=())
         self._monitor_thread.daemon = True
         self._monitor_thread.start()
 
     def Get_B(self):
         return self.B
-    
+
     def Get_Right_Trigger(self):
-        return self.RightTrigger
-    
+        return self.RightTrigger/4
+
     def Get_LeftXY(self):
-        return (self.LeftJoystickX, self.LeftJoystickY)
-    
+	# map 0-2 to -1 1
+        return (self.LeftJoystickX-1, -1*(self.LeftJoystickY-1))
+
     def Get_RightXY(self):
-        return (self.RightJoystickX, self.RightJoystickY)
-    
+        return (self.RightJoystickX-1, -1*(self.RightJoystickY-1))
+
     def read(self): # return the buttons/triggers that you care about in this methode
         x = self.LeftJoystickX
         y = self.LeftJoystickY
-        
+
         a = self.A
         b = self.X # b=1, x=2
         rb = self.RightBumper
         return [x, y, a, b, rb]
 
     def is_available(self):
-        try: 
-            get_gamepad()
-            return True
-        except:
-            return False
-        
+        # this is a hack, but if only have 1 device "eg. event0, it's not connected."
+        return len(evdev.list_devices()) > 1
+
     def _monitor_controller(self):
-        while True:
-            events = get_gamepad()
-            for event in events:
-                if event.code == 'ABS_Y':
-                    self.LeftJoystickY = event.state / XboxController.MAX_JOY_VAL # normalize between -1 and 1
-                elif event.code == 'ABS_X':
-                    self.LeftJoystickX = event.state / XboxController.MAX_JOY_VAL # normalize between -1 and 1
-                elif event.code == 'ABS_RY':
-                    self.RightJoystickY = event.state / XboxController.MAX_JOY_VAL # normalize between -1 and 1
-                elif event.code == 'ABS_RX':
-                    self.RightJoystickX = event.state / XboxController.MAX_JOY_VAL # normalize between -1 and 1
-                elif event.code == 'ABS_Z':
-                    self.LeftTrigger = event.state / XboxController.MAX_TRIG_VAL # normalize between 0 and 1
-                elif event.code == 'ABS_RZ':
-                    self.RightTrigger = event.state / XboxController.MAX_TRIG_VAL # normalize between 0 and 1
-                elif event.code == 'BTN_TL':
-                    self.LeftBumper = event.state
-                elif event.code == 'BTN_TR':
-                    self.RightBumper = event.state
-                elif event.code == 'BTN_SOUTH':
-                    self.A = event.state
-                elif event.code == 'BTN_NORTH':
-                    self.Y = event.state #previously switched with X
-                elif event.code == 'BTN_WEST':
-                    self.X = event.state #previously switched with Y
-                elif event.code == 'BTN_EAST':
-                    self.B = event.state
-                elif event.code == 'BTN_THUMBL':
-                    self.LeftThumb = event.state
-                elif event.code == 'BTN_THUMBR':
-                    self.RightThumb = event.state
-                elif event.code == 'BTN_SELECT':
-                    self.Back = event.state
-                elif event.code == 'BTN_START':
-                    self.Start = event.state
-                elif event.code == 'BTN_TRIGGER_HAPPY1':
-                    self.LeftDPad = event.state
-                elif event.code == 'BTN_TRIGGER_HAPPY2':
-                    self.RightDPad = event.state
-                elif event.code == 'BTN_TRIGGER_HAPPY3':
-                    self.UpDPad = event.state
-                elif event.code == 'BTN_TRIGGER_HAPPY4':
-                    self.DownDPad = event.state
+        for event in self.gamepad.read_loop():
+            if event.type == evdev.ecodes.EV_ABS:
+                absevent = evdev.categorize(event)
+                val = (absevent.event.value / XboxController.MAX_JOY_VAL)
+                #print(absevent.event.code)
+                if absevent.event.code == 0:
+                    self.LeftJoystickX = val
+                elif absevent.event.code == 1:
+                    self.LeftJoystickY = val
+                elif absevent.event.code == 2:
+                    self.RightJoystickX = val
+                elif absevent.event.code == 5:    
+                    self.RightJoystickY = val
+                elif absevent.event.code == 9:    
+                    self.RightTrigger = absevent.event.value / XboxController.MAX_TRIG_VAL
 
-
-
+            elif event.type == evdev.ecodes.EV_KEY:
+                keyevent = evdev.categorize(event)
+                if keyevent.keystate == 1:  # Key press
+                    #print(f"Button {keyevent.keycode[0]} pressed")
+                    if keyevent.keycode[0] == "BTN_B":
+                        self.B = 1
+                    
+                elif keyevent.keystate == 0:  # Key release
+                    #print(f"Button {keyevent.keycode[0]} released")
+                    if keyevent.keycode[0] == "BTN_B":
+                        self.B = 0
 
 if __name__ == '__main__':
     joy = XboxController()
     joy.connect()
     while True:
-        print(joy.Get_LeftXY(), joy.Get_RightXY())
+        print(joy.Get_LeftXY(), joy.Get_RightXY(), joy.Get_B(), joy.Get_Right_Trigger())
         time.sleep(1)

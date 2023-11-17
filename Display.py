@@ -1,5 +1,6 @@
 import curses
 from Controller import XboxController
+from ServoController import ServoController
 import time
 import math
 
@@ -13,7 +14,7 @@ class Display(object):
         self.controller.connect()
         self.screen_height = 0
         self.screen_width = 0 
-        self.elevation = 0
+        self.elevation = 90
         self.azimuth = 0
         self.fire_style_toggler = False
         curses.wrapper(self.main)
@@ -39,18 +40,18 @@ class Display(object):
                 self.elevation = round(self.elevation, 2)
 
     def update_angles_slow(self):
-        amplitude = 2
+        amplitude = 3
         (x, y) = self.controller.Get_LeftXY()
         self.update_angles(x, y, amplitude)
     
     def update_angles_fast(self):
-        amplitude = 7
+        amplitude = 10
         (x, y) = self.controller.Get_RightXY()
         self.update_angles(x, y, amplitude)
 
     def draw_angles_info(self, stdscr):
-        stdscr.addstr(self.screen_height - 50, 2, f"Elevation: {self.elevation}", curses.A_STANDOUT)
-        stdscr.addstr(self.screen_height - 52, 2, f"Azimuth: {self.azimuth}", curses.A_STANDOUT)
+        stdscr.addstr(self.screen_height - 10, 2, f"Elevation: {self.elevation}", curses.A_STANDOUT)
+        stdscr.addstr(self.screen_height - 15, 2, f"Azimuth: {180-self.azimuth}", curses.A_STANDOUT)
     
     def draw_controller_info(self, stdscr):
         stdscr.addstr(self.screen_height-2, 2, "Controller:", curses.A_STANDOUT)
@@ -84,7 +85,7 @@ class Display(object):
         if self.controller_connected:
             scale_factor = 0.10
             (x, y) = self.controller.Get_RightXY()
-            stdscr.addch(center_y + math.floor(self.screen_height * y * scale_factor) , center_x + math.floor(self.screen_width * x * scale_factor) , 'X', curses.color_pair(5))
+            stdscr.addch(center_y + math.floor(self.screen_height * -1 * y * scale_factor) , center_x + math.floor(self.screen_width * x * scale_factor) , 'X', curses.color_pair(5))
 
 
     def draw_angle_line(self, stdscr, y, x, length, angle):
@@ -110,7 +111,10 @@ class Display(object):
             stdscr.addch(line_y, line_x, character)
     
     def main(self, stdscr):
-
+        elevation = ServoController(18)
+        azimuth = ServoController(14)
+        azimuth.set_angle(45)
+        elevation.set_angle(0)
         curses.start_color()
         curses.init_pair(1, curses.COLOR_BLUE, curses.COLOR_BLACK)
         curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_RED)
@@ -121,12 +125,12 @@ class Display(object):
 
         self.screen_height, self.screen_width = stdscr.getmaxyx()
         curses.curs_set(0)
-        stdscr.clear()
+        stdscr.erase()
         stdscr.nodelay(True)
 
         while True:
             # Clear screen
-            stdscr.clear()
+            stdscr.erase()
             stdscr.border()
             # Get screen dimensions
             stdscr.addstr(1, 1, f"VERSION: {SOFTWARE_VERSION}", curses.color_pair(1))
@@ -149,12 +153,15 @@ class Display(object):
             if key == ord('q') or key == ord('Q') or key == 27 or (self.controller_connected and self.controller.Get_B()):  # Check for 'q' or Escape key
                break
             time.sleep(0.1)
+            azimuth.set_angle(180-self.azimuth)
+            elevation.set_angle(self.elevation)
             # if we are disconnected, slow down loop and try to reconnect
             if not self.controller_connected:
                 time.sleep(2)
                 self.controller.connect()
         # Cleanup curses
         curses.endwin()
+
 
 if __name__ == '__main__':
     display = Display()
