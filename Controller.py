@@ -35,6 +35,7 @@ class XboxController(object):
 
     def vibrate(self, duration_ms=1000, strength=32767):
         device = self.gamepad
+        print(device.capabilities())
         # Check if the device supports force feedback
         if evdev.ecodes.FF_RUMBLE not in device.capabilities().get(evdev.ecodes.EV_FF, []):
             print("Controller does not support force feedback")
