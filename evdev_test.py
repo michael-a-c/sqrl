@@ -1,4 +1,4 @@
-import evedev
+import evdev
 import time
 from evdev import ecodes, InputDevice, ff
 
