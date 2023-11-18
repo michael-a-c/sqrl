@@ -8,7 +8,7 @@ class Relay(object):
       GPIO.setup(pin, GPIO.OUT)
 
     def off(self):
-      GPIO.output(RELAIS_1_GPIO, GPIO.LOW) # out
+      GPIO.output(self.pin, GPIO.LOW) # out
 
     def on(self):
-      GPIO.output(RELAIS_1_GPIO, GPIO.HIGH) # out
+      GPIO.output(self.pin, GPIO.HIGH) # out
