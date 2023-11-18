@@ -27,16 +27,17 @@ class Display(object):
 
     def check_firing(self, stdscr):
         if self.controller_connected and self.controller.Get_Right_Trigger():
+                self.relay.on()                    
                 if not self.fire_style_toggler: 
                     style = curses.color_pair(2)
-                    self.relay.on()
                 else: 
                     style = curses.color_pair(5)
-                    self.relay.off()
 
 
                 stdscr.addstr(self.screen_height // 2, self.screen_width // 2 - 1, "FIRE", style)
                 self.fire_style_toggler = not self.fire_style_toggler
+        else:
+            self.relay.off()
                 
     def update_angles(self, x,y, amplitude):
         DEAD_ZONE = 0.05
