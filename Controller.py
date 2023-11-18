@@ -33,25 +33,6 @@ class XboxController(object):
         self.UpDPad = 0
         self.DownDPad = 0
 
-    def vibrate(self, duration_ms=1000, strength=32767):
-        device = self.gamepad
-        print(device.capabilities())
-        # Check if the device supports force feedback
-        if evdev.ecodes.FF_RUMBLE not in device.capabilities().get(evdev.ecodes.EV_FF, []):
-            print("Controller does not support force feedback")
-            return
-
-        # Create a force feedback effect
-        effect_id = device.upload_effect(evdev.ecodes.FF_RUMBLE, evdev.ecodes.FF_PERIODIC, 0, evdev.ff.Effect(
-            type=evdev.ff.FF_RUMBLE,
-            id=0,
-            direction=0,
-            trigger=evdev.ecodes.FF_AUTOCENTER,
-            replay_length=duration_ms,
-            replay_delay=0,
-            u=evdev.ff.Periodic(u={ 'waveform': evdev.ff.FF_SQUARE, 'period': 500, 'magnitude': strength, 'offset': 0, 'phase': 0 }),
-        ))
-
     def connect(self):
         self.gamepad = evdev.InputDevice(evdev.list_devices()[0])
         self._monitor_thread = threading.Thread(target=self._monitor_controller, args=())
@@ -118,5 +99,4 @@ if __name__ == '__main__':
     joy.connect()
     while True:
         print(joy.Get_LeftXY(), joy.Get_RightXY(), joy.Get_B(), joy.Get_Right_Trigger())
-        time.sleep(5)
-        joy.vibrate(duration_ms=2000, strength=32767)
+        time.sleep(1)

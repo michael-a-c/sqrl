@@ -3,7 +3,7 @@ import time
 servo_min = 500  # Minimum pulse width
 servo_max = 2500  # Maximum pulse width
 
-class ServoController(object):
+class Servo(object):
     def __init__(self, pin):
         self.pin = pin
         self.pi = pigpio.pi()

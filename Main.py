@@ -1,10 +1,14 @@
 import curses
 from Controller import XboxController
-from ServoController import ServoController
+from Servo import Servo
 import time
 import math
 
 SOFTWARE_VERSION="v0.0.1"
+
+ELEVATION_GPIO = 18
+AZIMUTH_GPIO = 14
+RELAY_GPIO = 23
 
 class Display(object):
 
@@ -30,12 +34,13 @@ class Display(object):
                 self.fire_style_toggler = not self.fire_style_toggler
                 
     def update_angles(self, x,y, amplitude):
+        DEAD_ZONE = 0.05
         if self.controller_connected:
             # allow for a dead zone since joystick doesn't reset to 0 perfectly.
-            if(abs(x) > 0.03 and self.azimuth + x*amplitude >= 0 and self.azimuth + x*amplitude <= 180):
+            if(abs(x) > DEAD_ZONE and self.azimuth + x*amplitude >= 0 and self.azimuth + x*amplitude <= 180):
                 self.azimuth += x*amplitude
                 self.azimuth = round(self.azimuth, 2)
-            if(abs(y) > 0.03 and self.elevation + y*amplitude >= 0 and self.elevation + y*amplitude <= 180):
+            if(abs(y) > DEAD_ZONE and self.elevation + y*amplitude >= 0 and self.elevation + y*amplitude <= 180):
                 self.elevation += y*amplitude
                 self.elevation = round(self.elevation, 2)
 
@@ -111,8 +116,8 @@ class Display(object):
             stdscr.addch(line_y, line_x, character)
     
     def main(self, stdscr):
-        elevation = ServoController(18)
-        azimuth = ServoController(14)
+        elevation = Servo(ELEVATION_GPIO)
+        azimuth = Servo(AZIMUTH_GPIO)
         azimuth.set_angle(45)
         elevation.set_angle(0)
         curses.start_color()
