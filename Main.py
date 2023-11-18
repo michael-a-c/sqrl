@@ -1,6 +1,7 @@
 import curses
 from Controller import XboxController
 from Servo import Servo
+from Relay import Relay
 import time
 import math
 
@@ -21,14 +22,18 @@ class Display(object):
         self.elevation = 90
         self.azimuth = 0
         self.fire_style_toggler = False
+        self.relay = Relay(RELAY_GPIO)
         curses.wrapper(self.main)
 
     def check_firing(self, stdscr):
         if self.controller_connected and self.controller.Get_Right_Trigger():
                 if not self.fire_style_toggler: 
                     style = curses.color_pair(2)
+                    self.relay.on()
                 else: 
                     style = curses.color_pair(5)
+                    self.relay.off()
+
 
                 stdscr.addstr(self.screen_height // 2, self.screen_width // 2 - 1, "FIRE", style)
                 self.fire_style_toggler = not self.fire_style_toggler
